@@ -57,8 +57,9 @@ static bool addPeer(const uint8_t* mac)
         return false;
     }
 
-    esp_now_del_peer(mac); // Remove if already exists (to update info)
+// Remove if already exists (to update info)
 
+    esp_now_del_peer(mac); 
     esp_now_peer_info_t peer{};
     memcpy(peer.peer_addr, mac, 6);
     peer.channel = ESPNOW_CHANNEL;
@@ -78,6 +79,11 @@ static bool addPeer(const uint8_t* mac)
 
 typedef struct __attribute__((packed))
  {
+  uint8_t protocol_version;   // telemetry versioning (for future compatibility)
+  uint8_t node_id;            // logical node identifier (set in config.h)
+  uint16_t reserved;          // laignment / future use 
+  float temperature_c;        // corrected temperature in Celsius
+  float humidity_pct;         // corrected humidity in percent
   uint32_t counter;
  }TelemetryPayload;
 
@@ -127,9 +133,21 @@ void loop()
     {
         lastSendMs = now;
 
+        // == File telemetry data (dummy data for now) ===
+        payload.protocol_version = 1;
+        payload.node_id = NODE_ID;
+        payload.reserved = 0;
+        payload.temperature_c = 0.0f;
+        payload.humidity_pct = 0.0f;
         payload.counter++;
 
-        Serial.printf("[SEND] Counter: %lu\n", ( unsigned long) payload.counter);
+        Serial.printf("[SEND] v:%u temp:%.2fC rh:%.1f%% cnt:%lu\n",
+           (unsigned long) payload.protocol_version,
+           (unsigned long) payload.node_id,
+           payload.temperature_c,
+           payload.humidity_pct,
+           (unsigned long) payload.counter
+          );
 
         esp_now_send(PEER_A_MAC, (uint8_t*)&payload, sizeof(payload));
         esp_now_send(PEER_B_MAC, (uint8_t*)&payload, sizeof(payload));

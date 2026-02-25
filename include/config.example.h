@@ -16,6 +16,10 @@ static const int I2C_SCL = 9;
 // All ESP-NOW nodes must use the same 2.4 GHz WiFi channel.
 static const uint8_t ESPNOW_CHANNEL = 1;
 
+// === NODE METADATA ===
+// Logical identifier of this node (used in telemetry payload)
+static const uint8_t NODE_ID = 1; // Change for each node (e.g., 1, 2, 3)
+
 // === PEER MAC ADDRESSES (PLACEHOLDERS) ===
 // Replace these in include/config.h with real target MACs.
 // Format: {0xAA,0xBB,0xCC,0x11,0x22,0x33}
