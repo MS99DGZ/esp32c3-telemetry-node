@@ -2,9 +2,13 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <Adafruit_SHT31.h>
 #include <string.h>
 
 #include <config.h>
+
+// === Sensor: SHT 31 ===
+static Adafruit_SHT31 g_sht31;
 
 // === ESP-NOW Helper Functions ===
 
@@ -73,6 +77,7 @@ static bool addPeer(const uint8_t* mac)
        Serial.println();
        return false;
     }
+    return true;
 } 
 
 // === Telemetry Payload Structure ===
@@ -121,6 +126,28 @@ void setup() {
   Serial.print("[INFO] WiFi Channel: ");
   Serial.println(WiFi.channel());
 
+  // === Add Peers ===
+
+  addPeer(PEER_A_MAC);
+  addPeer(PEER_B_MAC);
+  addPeer(PEER_C_MAC);
+
+
+  // === Sensor: I2C + SHT 31 initialization ===
+  
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  Wire.setClock(100000); // 100kHz
+
+  if(!g_sht31.begin(0x44))
+  {
+    Serial.println("[SHT31] Sensor not found at 0x44");
+    while(true) delay(1000);
+  }
+  else
+  {
+    Serial.println("[SHT31] Sensor initialized successfully");
+  }
+
   Serial.println("[INFO] ESP-NOW transport ready");
 }
 
@@ -133,12 +160,28 @@ void loop()
     {
         lastSendMs = now;
 
+        // === Read Sensor Data ===
+        const float t_raw = g_sht31.readTemperature();
+        const float rh_raw = g_sht31.readHumidity();
+
+        if(isnan(t_raw) || isnan(rh_raw))
+        {
+            Serial.println("[SHT31] Failed to read sensor data");
+            return;
+        }
+
+        const float t_corr = t_raw + TEMP_OFFSET_C;
+        float      h_corr = rh_raw + RH_OFFSET_PTC;
+
+        if(h_corr < 0.0f) h_corr = 0.0f;
+        if(h_corr > 100.0f) h_corr = 100.0f;
+        
         // == File telemetry data (dummy data for now) ===
         payload.protocol_version = 1;
         payload.node_id = NODE_ID;
         payload.reserved = 0;
-        payload.temperature_c = 0.0f;
-        payload.humidity_pct = 0.0f;
+        payload.temperature_c = t_corr;
+        payload.humidity_pct = h_corr;
         payload.counter++;
 
         Serial.printf("[SEND] v:%u temp:%.2fC rh:%.1f%% cnt:%lu\n",
