@@ -3,3 +3,4 @@
 .DS_Store
 *.log
 include/config.h
+include/wifi_config.h

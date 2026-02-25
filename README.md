@@ -129,8 +129,63 @@ Example serial output during operation:
 - Telemetry struct uses explicit alignment strategy
 - Designed for integration into a larger modular embedded control system
 
+
 ---
 
+## OTA Firmware Update
+
+This project supports secure Over-The-Air (OTA) firmware updates.
+
+### Configuration Concept
+
+OTA settings are defined **only once** in:
+
+include/wifi_config.h
+
+
+```cpp
+#define OTA_HOSTNAME   "esp32c3-telemetry-node"
+#define OTA_PASSWORD   "your-ota-password"
+
+The file wifi_config.h is excluded from version control.
+
+Automated PlatformIO Integration
+
+The script:
+
+scripts/ota_from_wifi_config.py
+
+automatically reads:
+
+OTA_HOSTNAME
+
+OTA_PASSWORD
+
+and injects them into the PlatformIO build process.
+
+This automatically sets:
+
+UPLOAD_PORT = <OTA_HOSTNAME>.local
+
+--auth=<OTA_PASSWORD>
+
+No manual editing of platformio.ini is required after configuration.
+
+OTA Upload Workflow
+
+First flash must be done via USB:
+
+pio run -t upload
+
+After WiFi connection is established:
+
+pio run -t upload
+
+The device is addressed automatically via:
+
+<OTA_HOSTNAME>.local
+
+No IP address configuration is required.
 ## License
 
 This project is intended for educational and portfolio purposes.

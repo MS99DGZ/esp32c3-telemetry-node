@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
@@ -6,6 +7,7 @@
 #include <string.h>
 
 #include <config.h>
+#include <wifi_config.h>
 
 // === Sensor: SHT 31 ===
 static Adafruit_SHT31 g_sht31;
@@ -108,6 +110,57 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
 
+  // === WiFi infrastructure connection (required for OTA) ===
+  
+  Serial.print("[WiFi] Connecting to SSID: ");
+  Serial.println(WIFI_SSID);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  unsigned long wifiStartMs = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - wifiStartMs < 15000UL)
+  {
+    delay(250);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.print("[WiFi] Connected, IP: ");
+    Serial.println(WiFi.localIP());
+  }
+  else
+  {
+    Serial.println("[WiFi] Connection FAILED (timeout), continuing without IP");
+  }
+  
+    // === OTA configuration ===
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+
+  ArduinoOTA
+    .onStart([]()
+    {
+      Serial.println("[OTA] Update start");
+    })
+    .onEnd([]()
+    {
+      Serial.println("[OTA] Update end");
+    })
+    .onProgress([](unsigned int progress, unsigned int total)
+    {
+      Serial.printf("[OTA] Progress: %u%%\r", (progress * 100U) / total);
+    })
+    .onError([](ota_error_t error)
+    {
+      Serial.printf("[OTA] Error[%u]\n", error);
+    });
+
+  ArduinoOTA.begin();
+
+  Serial.println("[OTA] Ready (waiting for updates)");
+
   fixChannel();
 
   // === ESP-NOW Initialization ===
@@ -154,7 +207,10 @@ void setup() {
 
 void loop() 
 {
-    const uint32_t now = millis();
+    // Handle OTA updates (if WiFi is connected)
+  ArduinoOTA.handle();
+
+  const uint32_t now = millis();
 
     if(now - lastSendMs >= SEND_INTERVAL_MS)
     {
