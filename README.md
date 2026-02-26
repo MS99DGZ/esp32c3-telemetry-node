@@ -186,6 +186,7 @@ The device is addressed automatically via:
 <OTA_HOSTNAME>.local
 
 No IP address configuration is required.
+
 ## License
 
 This project is intended for educational and portfolio purposes.
