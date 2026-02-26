@@ -189,3 +189,16 @@ No IP address configuration is required.
 ## License
 
 This project is intended for educational and portfolio purposes.
+```
+
+---
+
+## Mechanical Housing
+
+The production-ready 3D housing for this telemetry node  
+(ESP32-C3 + SHT31 sensor configuration) is published separately:
+
+MakerWorld Model:
+https://makerworld.com/de/models/2449935-esp32-c3-telemetry-node-housing-sht31-sensor#profileId-2689591
+
+Developed under the NorthForge3D technical label.
